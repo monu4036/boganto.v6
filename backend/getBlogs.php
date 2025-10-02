@@ -117,28 +117,26 @@ function getAllBlogs($db) {
         // Format blogs data
         $formatted_blogs = array_map('formatBlog', $blogs);
         
-        // Load related books for admin requests
-        if ($is_admin_request) {
-            foreach ($formatted_blogs as &$blog) {
-                $books_query = "SELECT * FROM related_books WHERE blog_id = :blog_id ORDER BY id ASC";
-                $books_stmt = $db->prepare($books_query);
-                $books_stmt->bindParam(':blog_id', $blog['id'], PDO::PARAM_INT);
-                $books_stmt->execute();
-                $related_books = $books_stmt->fetchAll(PDO::FETCH_ASSOC);
-                // Format the related books data
-                $blog['related_books'] = array_map(function($book) {
-                    return [
-                        'id' => (int)$book['id'],
-                        'blog_id' => (int)$book['blog_id'],
-                        'title' => $book['title'],
-                        'author' => $book['author'],
-                        'purchase_link' => $book['purchase_link'],
-                        'cover_image' => $book['cover_image'],
-                        'description' => $book['description'],
-                        'price' => $book['price']
-                    ];
-                }, $related_books);
-            }
+        // Load related books for all requests (not just admin)
+        foreach ($formatted_blogs as &$blog) {
+            $books_query = "SELECT * FROM related_books WHERE blog_id = :blog_id ORDER BY id ASC";
+            $books_stmt = $db->prepare($books_query);
+            $books_stmt->bindParam(':blog_id', $blog['id'], PDO::PARAM_INT);
+            $books_stmt->execute();
+            $related_books = $books_stmt->fetchAll(PDO::FETCH_ASSOC);
+            // Format the related books data
+            $blog['related_books'] = array_map(function($book) {
+                return [
+                    'id' => (int)$book['id'],
+                    'blog_id' => (int)$book['blog_id'],
+                    'title' => $book['title'],
+                    'author' => $book['author'],
+                    'purchase_link' => $book['purchase_link'],
+                    'cover_image' => getFullImageUrl($book['cover_image']),
+                    'description' => $book['description'],
+                    'price' => $book['price']
+                ];
+            }, $related_books);
         }
         
         $response = [
@@ -196,7 +194,7 @@ function getBlogById($db, $id) {
                 'title' => $book['title'],
                 'author' => $book['author'],
                 'purchase_link' => $book['purchase_link'],
-                'cover_image' => $book['cover_image'],
+                'cover_image' => getFullImageUrl($book['cover_image']),
                 'description' => $book['description'],
                 'price' => $book['price']
             ];
@@ -252,7 +250,7 @@ function getBlogBySlug($db, $slug) {
                 'title' => $book['title'],
                 'author' => $book['author'],
                 'purchase_link' => $book['purchase_link'],
-                'cover_image' => $book['cover_image'],
+                'cover_image' => getFullImageUrl($book['cover_image']),
                 'description' => $book['description'],
                 'price' => $book['price']
             ];
